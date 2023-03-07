@@ -12,6 +12,7 @@ impl Soup {
 		}
 		else { None }
 	}
+	fn impossible(&self) -> bool { return self.states.len()==0; }
 }
 struct Rules {
 	chars : Vec<char>,
@@ -60,7 +61,9 @@ impl Rules {
 		Rules { chars, disallow }
 	}
 
-	fn update_cell(&self, c : &mut Soup, nwo : Vec<(&Soup, (i32, i32))>) {
+	fn update_cell(&self,
+		c : &mut Soup,
+		nwo : Vec<(&Soup, (i32, i32))>) -> usize {
 		let mut to_remove = Vec::new();
 		// TODO make this more involved;
 		// current approach likely overlooks some configurations
@@ -74,8 +77,16 @@ impl Rules {
 			}
 		}
 		c.states.retain(|e| !to_remove.contains(e));
+		c.states.len()
 	}
 }
+
+#[derive(Debug)]
+enum CollapseError {
+	Impossible((u32,u32)),
+	Other((u32,u32),String)
+}
+
 struct Grid {
 	w: u32,
 	h: u32,
@@ -109,11 +120,16 @@ impl Grid {
 	pub fn get(&self, x : u32, y : u32) -> Soup {
 		self.cells.get(&(x,y)).unwrap().clone()
 	}
-	pub fn collapse(&mut self, pos: (u32,u32), states : Soup) {
+	pub fn collapse(&mut self,
+		pos: (u32,u32), states : Soup)
+		-> Result<(), CollapseError>
+	{
 		self.cells.insert(pos, states);
-		self.propagate_collapse(pos, &mut Vec::new());
+		self.propagate_collapse(pos, &mut Vec::new())
 	}
-	pub fn collapse_certain(&mut self, pos: (u32,u32), state : char) {
+	pub fn collapse_certain(&mut self,
+		pos: (u32,u32), state : char) -> Result<(), CollapseError>
+	{
 		self.collapse(pos, Soup::new(vec![state]))
 	}
 
@@ -139,7 +155,7 @@ impl Grid {
 	}
 	fn propagate_collapse(&mut self,
 		o: (u32,u32),
-		hist : &mut Vec<(u32, u32)>)
+		hist : &mut Vec<(u32, u32)>) -> Result<(), CollapseError>
 	{
 		let s = self.get_neighbours_with_offsets(o.0, o.1);
 		hist.push(o);
@@ -148,13 +164,19 @@ impl Grid {
 		for (e, e_o) in s.iter() {
 			if hist.contains(e) { continue; }
 			hist.push(e.clone());
-			self.rules.update_cell(self.cells.get_mut(e).unwrap(),
+			let r = self.rules.update_cell(
+				self.cells.get_mut(e).unwrap(),
 				vec![(&o_v.clone(), (-e_o.0, -e_o.1))]);
+			if r==0 {
+				return Err(CollapseError::Impossible(e.clone()));
+			}
 		}
 		for (e,_) in s.iter() {
 			if hist.contains(e) { continue; }
-			self.propagate_collapse(*e, hist);
+			let r = self.propagate_collapse(*e, hist);
+			if r.is_err() { return r };
 		}
+		Ok(())
 	}
 }
 
@@ -169,8 +191,9 @@ fn main() {
 
 	let mut grid = Grid::new(10,10, rules);
 	grid.print();
-	grid.collapse_certain((4, 5), 'o');
+	grid.collapse_certain((4, 5), 'o').expect("First collapse");
 	grid.print();
+	grid.collapse_certain((5, 5), 'o').expect("Second collapse");
 }
 fn test() {
 	let sample = vec![
