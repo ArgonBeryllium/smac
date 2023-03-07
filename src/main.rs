@@ -107,7 +107,18 @@ impl Grid {
 		}
 	}
 
-	pub fn get_neighbours_with_offsets(&self, x : u32, y : u32)
+	pub fn get(&self, x : u32, y : u32) -> Soup {
+		self.cells.get(&(x,y)).unwrap().clone()
+	}
+	pub fn collapse(&mut self, pos: (u32,u32), states : Soup) {
+		self.cells.insert(pos, states);
+		self.propagate_collapse(pos, &mut Vec::new());
+	}
+	pub fn collapse_certain(&mut self, pos: (u32,u32), state : char) {
+		self.collapse(pos, Soup::new(vec![state]))
+	}
+
+	fn get_neighbours_with_offsets(&self, x : u32, y : u32)
 		-> Vec<((u32, u32), (i32, i32))>
 	{
 		let mut out = Vec::new();
@@ -118,6 +129,7 @@ impl Grid {
 			let rx = x + ox;
 			if rx < 0 || rx >= (self.w as i32) { continue; }
 			for oy in -1..=1 {
+				if ox == 0 && oy == 0  { continue; }
 				let ry = y + oy;
 				if ry < 0 || ry >= (self.h as i32) { continue; }
 				out.push(((rx as u32, ry as u32), (ox, oy)));
