@@ -117,8 +117,9 @@ impl Grid {
 		self.collapse(pos, Soup::new(vec![state]))
 	}
 
-	fn get_neighbours_with_offsets(&self, x : u32, y : u32)
-		-> Vec<((u32, u32), (i32, i32))>
+	fn get_neighbours_with_offsets(&self,
+		x : u32,
+		y : u32) -> Vec<((u32, u32), (i32, i32))>
 	{
 		let mut out = Vec::new();
 		// for slightly less annoying comparisons
@@ -136,30 +137,24 @@ impl Grid {
 		}
 		out
 	}
-	pub fn collapse(&mut self, pos: (u32,u32), states : Soup) {
-		self.cells.insert(pos, states);
-		self.propagate_collapse(pos, &mut Vec::new());
-	}
-	pub fn collapse_certain(&mut self, pos: (u32,u32), state : char) {
-		self.collapse(pos, Soup::new(vec![state]))
-	}
-
-	fn propagate_collapse(&mut self, o: (u32,u32), hist : &mut Vec<(u32, u32)>) {
-		let mut s = self.get_neighbours_with_offsets(o.0, o.1);
-		s.push((o, (0,0)));
+	fn propagate_collapse(&mut self,
+		o: (u32,u32),
+		hist : &mut Vec<(u32, u32)>)
+	{
+		let s = self.get_neighbours_with_offsets(o.0, o.1);
 		hist.push(o);
 
 		let o_v = self.cells[&o].clone();
 		for (e, e_o) in s.iter() {
-			if hist.contains(e) { continue };
+			if hist.contains(e) { continue; }
 			hist.push(e.clone());
 			self.rules.update_cell(self.cells.get_mut(e).unwrap(),
 				vec![(&o_v.clone(), (-e_o.0, -e_o.1))]);
 		}
 		for (e,_) in s.iter() {
-			if hist.contains(e) { continue };
+			if hist.contains(e) { continue; }
 			self.propagate_collapse(*e, hist);
-		}		
+		}
 	}
 }
 
