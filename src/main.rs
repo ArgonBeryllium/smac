@@ -32,6 +32,7 @@ impl Rules {
 		for y in 0..h {
 			for ox in -1i32..=1 {
 			for oy in -1i32..=1 {
+				if ox == 0 && oy == 0 { continue; }
 				let k = (example[y].chars().nth(x).unwrap(), (ox, oy));
 				// get check offset validity
 				let ry = y as i32 + oy;
