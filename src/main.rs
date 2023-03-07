@@ -62,19 +62,18 @@ impl Rules {
 
 	fn update_cell(&self, c : &mut Soup, nwo : Vec<(&Soup, (i32, i32))>) {
 		let mut to_remove = Vec::new();
+		// TODO make this more involved;
+		// current approach likely overlooks some configurations
 		for (n, o) in nwo {
 			for state in c.states.iter() {
-				// TODO finish this, only handles definite cases as of now
-				let n = n.certain();
-				if n.is_none() { continue; }
-				let n = n.unwrap();
-				if self.disallow[&(state.clone(), o)].contains(&n) {
-					to_remove.push(state.clone());
-					continue;
+				for m in n.states.iter() {
+					if self.disallow[&(state.clone(), o)].contains(&m) {
+						to_remove.push(state.clone());
+					}
 				}
 			}
 		}
-		c.states.retain(|e| to_remove.contains(e));
+		c.states.retain(|e| !to_remove.contains(e));
 	}
 }
 struct Grid {
