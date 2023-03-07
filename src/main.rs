@@ -153,15 +153,37 @@ impl Grid {
 }
 
 fn main() {
+	test();
 	let sample = vec![
 				" #     ",
 				"###  # ",
 				"#o## # ",
 				"###    "];
 	let rules = Rules::induce(vec![' ','#','o'], sample);
-	println!("{:?}", rules.disallow);
+
 	let mut grid = Grid::new(10,10, rules);
 	grid.print();
 	grid.collapse_certain((4, 5), 'o');
 	grid.print();
+}
+fn test() {
+	let sample = vec![
+				" #     ",
+				"###  # ",
+				"#o## # ",
+				"###    "];
+	let rules = Rules::induce(vec![' ','#','o'], sample);
+	rules.disallow.iter().for_each(|(k, v)|
+		match k.0 {
+			'o' => {
+				assert!(v.contains(&' '));
+				assert!(v.contains(&'o'));
+			}
+			' ' => {
+				assert!(v.contains(&'o'));
+				assert!(v.len()==1);
+			}
+			_ => {}
+		}
+	);
 }
