@@ -71,10 +71,10 @@ impl Rules {
 		// current approach likely overlooks some configurations
 		for (n, o) in nwo {
 			for state in c.states.iter() {
-				for m in n.states.iter() {
-					if self.disallow[&(state.clone(), o)].contains(&m) {
-						to_remove.push(state.clone());
-					}
+				let m = n.certain();
+				if m.is_none() { continue; }
+				if self.disallow[&(state.clone(), o)].contains(&m.unwrap()) {
+					to_remove.push(state.clone());
 				}
 			}
 		}
@@ -218,7 +218,7 @@ impl Grid {
 
 			let r = self.rules.update_cell(
 				self.cells.get_mut(nbr).unwrap(),
-				vec![(&o_value.clone(), (-nbr_offset.0, -nbr_offset.1))]
+				vec![(&o_value, (-nbr_offset.0, -nbr_offset.1))]
 			);
 			if r==0 {
 				return Err(CollapseError::Impossible(
@@ -257,7 +257,7 @@ fn main() {
 
 	let mut grid = Grid::new(10,10, rules);
 	grid.print();
-	grid.collapse_certain((4, 5), 'o').expect("First collapse");
+	grid.collapse_certain((4, 5), ' ').expect("First collapse");
 	grid.print();
 }
 fn test() {
