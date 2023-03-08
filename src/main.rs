@@ -1,9 +1,10 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Debug};
 
 #[derive(Clone)]
 struct Soup {
 	states : Vec<char>
 }
+#[allow(dead_code)]
 impl Soup {
 	fn new(chars : Vec<char>) -> Self { Soup{ states: chars.clone() } }
 	fn certain(&self) -> Option<char> {
@@ -18,6 +19,7 @@ struct Rules {
 	chars : Vec<char>,
 	disallow : HashMap<(char, (i32, i32)), Vec<char>>
 }
+#[allow(dead_code)]
 impl Rules {
 	fn new() -> Self { Rules { chars: Vec::new(), disallow: HashMap::new() } }
 	// induce the allowed neighbouring rules based on an example
@@ -82,9 +84,50 @@ impl Rules {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 enum CollapseError {
-	Impossible((u32,u32)),
+	Impossible((u32,u32), CollapseHistory),
 	Other((u32,u32),String)
+}
+
+#[derive(Clone)]
+#[allow(dead_code)]
+struct GridChange {
+	bef : HashMap<(u32,u32), Soup>,
+	aft : HashMap<(u32,u32), Soup>
+}
+#[derive(Clone)]
+struct CollapseHistory {
+	changes : Vec<((u32, u32), GridChange)>,
+	open : bool
+}
+impl CollapseHistory {
+	fn new() -> Self { Self { changes: Vec::new(), open : false } }
+
+	fn push_bef(&mut self,
+		pos : (u32, u32),
+		bef : HashMap<(u32, u32), Soup>) {
+		assert!(!self.open, "Pushing `bef` to history with an open entry");
+		self.open = true;
+		self.changes.push((pos, GridChange{bef, aft: HashMap::new()}));
+	}
+	fn push_aft(&mut self, aft : HashMap<(u32, u32), Soup>) {
+		assert!(self.open, "Pushing `aft` to history without an open entry");
+		self.changes.last_mut().unwrap().1.aft = aft;
+		self.open = false;
+	}
+
+	fn contains(&self, pos : &(u32, u32)) -> bool
+		{ self.changes.iter().any(|e| e.0 == *pos) }
+}
+impl Debug for CollapseHistory{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+			f.debug_struct("Collapse History")
+			.field("total entries", &self.changes.len())
+			.field("first change pos", &self.changes.first().unwrap().0)
+			.field("last change pos", &self.changes.last().unwrap().0)
+			.finish()
+    }
 }
 
 struct Grid {
@@ -108,24 +151,25 @@ impl Grid {
 		println!("---");
 		for y in 0..self.h {
 			for x in 0..self.w {
-				let c = self.cells.get(&(x,y)).unwrap()
-					.certain().unwrap_or('?');
-				//print!("{}", self.cells.get(&(x,y)).unwrap().states.len());
+				let c = self.cells.get(&(x,y)).unwrap();
+				let c = c.certain()
+					.unwrap_or(c.states.len()
+						.to_string().chars().nth(0).unwrap());
 				print!("{} ", c);
 			}
 			println!();
 		}
 	}
 
-	pub fn get(&self, x : u32, y : u32) -> Soup {
-		self.cells.get(&(x,y)).unwrap().clone()
+	pub fn get(&self, c : (u32,u32)) -> Soup {
+		self.cells.get(&c).unwrap().clone()
 	}
 	pub fn collapse(&mut self,
 		pos: (u32,u32), states : Soup)
 		-> Result<(), CollapseError>
 	{
 		self.cells.insert(pos, states);
-		self.propagate_collapse(pos, &mut Vec::new())
+		self.propagate_collapse(pos, &mut CollapseHistory::new())
 	}
 	pub fn collapse_certain(&mut self,
 		pos: (u32,u32), state : char) -> Result<(), CollapseError>
@@ -141,6 +185,7 @@ impl Grid {
 		// for slightly less annoying comparisons
 		let x = x as i32;
 		let y = y as i32;
+
 		for ox in -1..=1 {
 			let rx = x + ox;
 			if rx < 0 || rx >= (self.w as i32) { continue; }
@@ -153,29 +198,49 @@ impl Grid {
 		}
 		out
 	}
+
 	fn propagate_collapse(&mut self,
 		o: (u32,u32),
-		hist : &mut Vec<(u32, u32)>) -> Result<(), CollapseError>
+		hist : &mut CollapseHistory) -> Result<(), CollapseError>
 	{
-		let s = self.get_neighbours_with_offsets(o.0, o.1);
-		hist.push(o);
+		let nbrs_and_offsets = self.get_neighbours_with_offsets(o.0, o.1);
 
-		let o_v = self.cells[&o].clone();
-		for (e, e_o) in s.iter() {
-			if hist.contains(e) { continue; }
-			hist.push(e.clone());
+		let nbr_values = nbrs_and_offsets.iter()
+			.filter(|(p,_)| self.cells.contains_key(p))
+			.map(|(n, _)| (n.clone(), self.get(*n).clone()))
+			.into_iter().collect();
+		hist.push_bef(o, nbr_values);
+
+		// apply the consequences to neighbours
+		let o_value = self.get(o).clone();
+		for (nbr, nbr_offset) in nbrs_and_offsets.iter() {
+			if hist.contains(nbr) { continue; }
+
 			let r = self.rules.update_cell(
-				self.cells.get_mut(e).unwrap(),
-				vec![(&o_v.clone(), (-e_o.0, -e_o.1))]);
+				self.cells.get_mut(nbr).unwrap(),
+				vec![(&o_value.clone(), (-nbr_offset.0, -nbr_offset.1))]
+			);
 			if r==0 {
-				return Err(CollapseError::Impossible(e.clone()));
+				return Err(CollapseError::Impossible(
+					nbr.clone(),
+					hist.clone()
+				));
 			}
 		}
-		for (e,_) in s.iter() {
-			if hist.contains(e) { continue; }
-			let r = self.propagate_collapse(*e, hist);
-			if r.is_err() { return r };
+
+		let nbr_values = nbrs_and_offsets.iter()
+			.filter(|(p,_)| self.cells.contains_key(p))
+			.map(|(n, _)| (n.clone(), self.get(*n).clone()))
+			.into_iter().collect();
+		hist.push_aft(nbr_values);
+
+		// propagate until all have been updated
+		for (nbr,_) in nbrs_and_offsets.iter() {
+			if hist.contains(nbr) { continue; }
+			let r = self.propagate_collapse(*nbr, hist);
+			if r.is_err() { return r; }
 		}
+
 		Ok(())
 	}
 }
@@ -188,12 +253,12 @@ fn main() {
 				"#o## # ",
 				"###    "];
 	let rules = Rules::induce(vec![' ','#','o'], sample);
+	println!("{:?}", rules.disallow);
 
 	let mut grid = Grid::new(10,10, rules);
 	grid.print();
 	grid.collapse_certain((4, 5), 'o').expect("First collapse");
 	grid.print();
-	grid.collapse_certain((5, 5), 'o').expect("Second collapse");
 }
 fn test() {
 	let sample = vec![
