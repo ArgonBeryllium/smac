@@ -1,5 +1,7 @@
 use std::{collections::HashMap, fmt::Debug};
 
+use rand::seq::SliceRandom;
+
 #[derive(Clone)]
 struct Soup {
 	states : Vec<char>
@@ -119,6 +121,25 @@ impl CollapseHistory {
 
 	fn contains(&self, pos : &(u32, u32)) -> bool
 		{ self.changes.iter().any(|e| e.0 == *pos) }
+
+	fn undo(&mut self,
+		grid : &mut Grid,
+		steps : usize) -> Vec<((u32, u32), GridChange)>
+	{
+		let range =
+			if steps == 0 { 0..self.changes.len() }
+			else { 0..steps };
+
+		let mut out = Vec::new();
+		for _ in range {
+			let change = self.changes.pop().expect("No changes left to undo");
+			out.push(change.clone());
+			for cell_state in change.1.bef {
+				grid.set(cell_state.0, cell_state.1);
+			}
+		}
+		out
+	}
 }
 impl Debug for CollapseHistory{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -147,32 +168,22 @@ impl Grid {
 		Grid{w, h, rules, cells}
 	}
 
-	fn print(&self) {
-		println!("---");
-		for y in 0..self.h {
-			for x in 0..self.w {
-				let c = self.cells.get(&(x,y)).unwrap();
-				let c = c.certain()
-					.unwrap_or(c.states.len()
-						.to_string().chars().nth(0).unwrap());
-				print!("{} ", c);
-			}
-			println!();
-		}
-	}
-
 	pub fn get(&self, c : (u32,u32)) -> Soup {
 		self.cells.get(&c).unwrap().clone()
 	}
+	pub fn set(&mut self, c : (u32, u32), s : Soup) {
+		self.cells.insert(c, s);
+	}
 	pub fn collapse(&mut self,
-		pos: (u32,u32), states : Soup)
-		-> Result<(), CollapseError>
+		pos: (u32,u32),
+		states : Soup) -> Result<(), CollapseError>
 	{
 		self.cells.insert(pos, states);
 		self.propagate_collapse(pos, &mut CollapseHistory::new())
 	}
 	pub fn collapse_certain(&mut self,
-		pos: (u32,u32), state : char) -> Result<(), CollapseError>
+		pos: (u32,u32),
+		state : char) -> Result<(), CollapseError>
 	{
 		self.collapse(pos, Soup::new(vec![state]))
 	}
@@ -197,6 +208,25 @@ impl Grid {
 			}
 		}
 		out
+	}
+	fn get_uncertain(&self) -> HashMap<(u32, u32), Soup> {
+		self.cells.iter()
+			.filter(|(_, v)| v.certain().is_none())
+			.map(|(k, v)| (k.clone(), v.clone()))
+			.collect::<HashMap<(u32,u32), Soup>>()
+	}
+	fn print(&self) {
+		println!("---");
+		for y in 0..self.h {
+			for x in 0..self.w {
+				let c = self.cells.get(&(x,y)).unwrap();
+				let c = c.certain()
+					.unwrap_or(c.states.len()
+						.to_string().chars().nth(0).unwrap());
+				print!("{} ", c);
+			}
+			println!();
+		}
 	}
 
 	fn propagate_collapse(&mut self,
@@ -243,6 +273,54 @@ impl Grid {
 
 		Ok(())
 	}
+
+	pub fn bruteforce_collapse(&mut self,
+		order : &dyn Fn(&Soup) -> Vec<char>) -> Option<CollapseHistory>
+	{
+		let mut hist = CollapseHistory::new();
+		if self.bruteforce_iter(&mut hist, order) {
+			Some(hist)
+		}
+		else {
+			hist.undo(self, 0);
+			None
+		}
+	}
+	fn bruteforce_iter(&mut self,
+		hist : &mut CollapseHistory,
+		order : &dyn Fn(&Soup) -> Vec<char>) -> bool
+	{
+		let uncertain_cells = self.get_uncertain();
+		if uncertain_cells.len() == 0 { return true; }
+
+		let c = uncertain_cells.iter().nth(0).unwrap();
+		let c = (c.0.clone(), c.1.clone());
+		let mut options = order(&c.1);
+
+		while options.len() > 0 {
+			hist.push_bef(c.0, uncertain_cells.clone());
+			let option = options.pop().unwrap();
+			let r = self.collapse_certain(c.0, option);
+			hist.push_aft(uncertain_cells.iter()
+				.map(|(&p,_)| (p, self.get(p)))
+				.collect());
+
+			if r.is_ok() {
+				if self.bruteforce_iter(hist, order) {
+					return true;
+				}
+				else { hist.undo(self, 1); }
+			}
+			else {
+				match r.err().unwrap() {
+					CollapseError::Impossible(_, mut subhist) =>
+						subhist.undo(self, 0),
+					_ => todo!()
+				};
+			}
+		}
+		false
+	}
 }
 
 fn main() {
@@ -257,7 +335,14 @@ fn main() {
 
 	let mut grid = Grid::new(10,10, rules);
 	grid.print();
-	grid.collapse_certain((4, 5), ' ').expect("First collapse");
+	grid.collapse_certain((4, 5), 'o').expect("First collapse");
+	grid.print();
+	let order = |c : &Soup| {
+		let mut out = c.states.clone();
+		out.shuffle(&mut rand::thread_rng());
+		out
+	};
+	grid.bruteforce_collapse(&order);
 	grid.print();
 }
 fn test() {
