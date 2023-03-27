@@ -75,7 +75,10 @@ impl Rules {
 			for state in c.states.iter() {
 				let m = n.certain();
 				if m.is_none() { continue; }
-				if self.disallow[&(state.clone(), o)].contains(&m.unwrap()) {
+
+				let disallowed = self.disallow.get(&(state.clone(), o));
+				if disallowed.is_none() { continue; }
+				if disallowed.unwrap().contains(&m.unwrap()) {
 					to_remove.push(state.clone());
 				}
 			}
@@ -178,8 +181,16 @@ impl Grid {
 		pos: (u32,u32),
 		states : Soup) -> Result<(), CollapseError>
 	{
-		self.cells.insert(pos, states);
-		self.propagate_collapse(pos, &mut CollapseHistory::new())
+		if pos.0 >= self.w || pos.1 >= self.h {
+			return Err(CollapseError::Other(pos,
+					"Invalid position".to_owned()))
+		}
+		let mut history = CollapseHistory::new();
+		history.push_bef(pos, [(pos, self.cells[&pos].clone())].into());
+		self.cells.insert(pos, states.clone());
+		history.push_aft([(pos, states)].into());
+
+		self.propagate_collapse(pos, &mut history)
 	}
 	pub fn collapse_certain(&mut self,
 		pos: (u32,u32),
@@ -209,7 +220,7 @@ impl Grid {
 		}
 		out
 	}
-	fn get_uncertain(&self) -> HashMap<(u32, u32), Soup> {
+	fn get_uncertain_cells(&self) -> HashMap<(u32, u32), Soup> {
 		self.cells.iter()
 			.filter(|(_, v)| v.certain().is_none())
 			.map(|(k, v)| (k.clone(), v.clone()))
@@ -290,59 +301,75 @@ impl Grid {
 		hist : &mut CollapseHistory,
 		order : &dyn Fn(&Soup) -> Vec<char>) -> bool
 	{
-		let uncertain_cells = self.get_uncertain();
+		let uncertain_cells = self.get_uncertain_cells();
 		if uncertain_cells.len() == 0 { return true; }
+		let mut left = uncertain_cells.clone();
 
-		let c = uncertain_cells.iter().nth(0).unwrap();
-		let c = (c.0.clone(), c.1.clone());
-		let mut options = order(&c.1);
+		let pc = self.cells.clone();
+		while left.len() > 0 {
+			let cell = left.iter().nth(0).unwrap();
+			let cell = (cell.0.clone(), cell.1.clone());
+			let mut options = order(&cell.1);
 
-		while options.len() > 0 {
-			hist.push_bef(c.0, uncertain_cells.clone());
-			let option = options.pop().unwrap();
-			let r = self.collapse_certain(c.0, option);
-			hist.push_aft(uncertain_cells.iter()
-				.map(|(&p,_)| (p, self.get(p)))
-				.collect());
+			while options.len() > 0 {
+				let option = options.pop().unwrap();
 
-			if r.is_ok() {
-				if self.bruteforce_iter(hist, order) {
-					return true;
+				hist.push_bef(cell.0, uncertain_cells.clone());
+				let r = self.collapse_certain(cell.0, option);
+				hist.push_aft(uncertain_cells.iter()
+					.map(|(&p,_)| (p, self.get(p)))
+					.collect());
+
+				if r.is_ok() {
+					if self.bruteforce_iter(hist, order) {
+						return true;
+					}
+					else { hist.undo(self, 1); }
 				}
-				else { hist.undo(self, 1); }
+				else {
+					match r.err().unwrap() {
+						CollapseError::Impossible(_, mut subhist) =>
+							subhist.undo(self, 0),
+						_ => todo!()
+					};
+				}
 			}
-			else {
-				match r.err().unwrap() {
-					CollapseError::Impossible(_, mut subhist) =>
-						subhist.undo(self, 0),
-					_ => todo!()
-				};
-			}
+			left.remove(&cell.0);
 		}
+
 		false
 	}
 }
 
 fn main() {
 	test();
+	//let sample = vec![
+	//			" #     ",
+	//			"###  # ",
+	//			"#o## # ",
+	//			"###    "];
+	//let states = vec![' ','#','o'];
 	let sample = vec![
-				" #     ",
-				"###  # ",
-				"#o## # ",
-				"###    "];
-	let rules = Rules::induce(vec![' ','#','o'], sample);
+		"   |  || ",
+		" r-+--++-",
+		" | |  ||r",
+		" | |  ||L",
+		" L-+--++-"
+	];
+	let states = vec![' ', '-', '|', '+', 'r', 'L'];
+	let rules = Rules::induce(states.clone(), sample);
 	println!("{:?}", rules.disallow);
 
-	let mut grid = Grid::new(10,10, rules);
+	let mut grid = Grid::new(5,5, rules);
 	grid.print();
-	grid.collapse_certain((4, 5), 'o').expect("First collapse");
+	grid.collapse_certain((2, 3), states[2]).expect("First collapse");
 	grid.print();
 	let order = |c : &Soup| {
 		let mut out = c.states.clone();
 		out.shuffle(&mut rand::thread_rng());
 		out
 	};
-	grid.bruteforce_collapse(&order);
+	println!("{}", grid.bruteforce_collapse(&order).is_some());
 	grid.print();
 }
 fn test() {
