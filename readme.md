@@ -12,3 +12,4 @@ Thus, the table below may be of use if you're planning on examining the code:
 | ---- | ------- | ------- |
 | Soup | struct name | A **sup**erposition of states; Effectively an object storing the possible states of a cell. |
 | certain | `Soup::certain`, `Grid::collapse_certain` | The certain state of a Soup; Only defined if there is exactly 1 possible state the Soup could be in; `None` otherwise.
+| induce | `Rules::induce()` | `Induce` as in `induction`; The process of inferring rules based on the available information.
