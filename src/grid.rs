@@ -10,6 +10,7 @@ pub struct Grid<T: SoupType> {
 	rules : Rules<T>,
 	cells: HashMap<(u32,u32), Soup<T>>
 }
+#[allow(dead_code)]
 impl<T: SoupType> Grid<T> {
 	pub fn new(w : u32, h : u32, rules : Rules<T>) -> Self {
 		let mut cells = HashMap::new();
