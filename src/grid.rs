@@ -154,7 +154,6 @@ impl Grid {
 		if uncertain_cells.len() == 0 { return true; }
 		let mut left = uncertain_cells.clone();
 
-		let pc = self.cells.clone();
 		while left.len() > 0 {
 			let cell = left.iter().nth(0).unwrap();
 			let cell = (cell.0.clone(), cell.1.clone());
