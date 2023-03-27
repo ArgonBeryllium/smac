@@ -22,7 +22,6 @@ fn main() {
 	];
 	let states = vec![' ', '-', '|', '+', 'r', 'L'];
 	let rules = Rules::induce(states.clone(), templates::char::strings_to_vecs(&sample));
-	println!("{:?}", rules.disallow);
 
 	let mut grid : Grid<char> = Grid::new(10,10, rules);
 	grid.print();
