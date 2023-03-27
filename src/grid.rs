@@ -3,6 +3,7 @@ use crate::soup::Soup;
 use crate::rules::Rules;
 use crate::collapse_helpers::*;
 
+#[derive(Clone, Debug, PartialEq)]
 pub struct Grid {
 	w: u32,
 	h: u32,
@@ -152,10 +153,14 @@ impl Grid {
 	{
 		let uncertain_cells = self.get_uncertain_cells();
 		if uncertain_cells.len() == 0 { return true; }
-		let mut left = uncertain_cells.clone();
+
+		let left = uncertain_cells.clone();
+		let mut left : Vec<(&(u32, u32), &Soup)> = left.iter().collect();
+		// TODO make this optional, as determinism is not always necessary
+		left.sort();
 
 		while left.len() > 0 {
-			let cell = left.iter().nth(0).unwrap();
+			let cell = left[0];
 			let cell = (cell.0.clone(), cell.1.clone());
 			let mut options = order(&cell.1);
 
@@ -182,7 +187,7 @@ impl Grid {
 					};
 				}
 			}
-			left.remove(&cell.0);
+			left.remove(0);
 		}
 
 		false

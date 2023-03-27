@@ -1,6 +1,7 @@
 use crate::soup::Soup;
 use std::collections::HashMap;
 
+#[derive(Clone, Debug, PartialEq)]
 pub struct Rules {
 	pub chars : Vec<char>,
 	pub disallow : HashMap<(char, (i32, i32)), Vec<char>>

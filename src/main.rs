@@ -1,5 +1,6 @@
 use rand::seq::SliceRandom;
 
+mod tests;
 mod soup;
 mod rules;
 mod collapse_helpers;
@@ -9,7 +10,6 @@ use rules::Rules;
 use grid::Grid;
 
 fn main() {
-	test();
 	let sample = vec![
 		"   |  || ",
 		" r-+--++-",
@@ -32,25 +32,4 @@ fn main() {
 	};
 	println!("{}", grid.bruteforce_collapse(&order).is_some());
 	grid.print();
-}
-fn test() {
-	let sample = vec![
-				" #     ",
-				"###  # ",
-				"#o## # ",
-				"###    "];
-	let rules = Rules::induce(vec![' ','#','o'], sample);
-	rules.disallow.iter().for_each(|(k, v)|
-		match k.0 {
-			'o' => {
-				assert!(v.contains(&' '));
-				assert!(v.contains(&'o'));
-			}
-			' ' => {
-				assert!(v.contains(&'o'));
-				assert!(v.len()==1);
-			}
-			_ => {}
-		}
-	);
 }

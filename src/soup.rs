@@ -1,4 +1,5 @@
-#[derive(Clone)]
+#[derive(Clone,Debug)]
+#[derive(Eq, PartialEq, PartialOrd, Ord)]
 pub struct Soup {
 	pub states : Vec<char>
 }
