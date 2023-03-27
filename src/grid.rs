@@ -1,35 +1,39 @@
 use std::collections::HashMap;
-use crate::soup::Soup;
+use crate::soup::*;
 use crate::rules::Rules;
 use crate::collapse_helpers::*;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Grid {
+pub struct Grid<T: SoupType> {
 	w: u32,
 	h: u32,
-	rules : Rules,
-	cells: HashMap<(u32,u32), Soup>
+	rules : Rules<T>,
+	cells: HashMap<(u32,u32), Soup<T>>
 }
-impl Grid {
-	pub fn new(w : u32, h : u32, rules : Rules) -> Self {
+impl<T: SoupType> Grid<T> {
+	pub fn new(w : u32, h : u32, rules : Rules<T>) -> Self {
 		let mut cells = HashMap::new();
 		for x in 0..w {
 			for y in 0..h {
-				cells.insert((x,y), Soup::new(rules.chars.clone()));
+				cells.insert((x,y), Soup::new(rules.types.clone()));
 			}
 		}
 		Grid{w, h, rules, cells}
 	}
+	pub fn get_width(&self) -> u32 { self.w }
+	pub fn get_height(&self) -> u32 { self.h }
+	pub fn get_rules(&self) -> &Rules<T> { &self.rules }
+	pub fn get_rules_mut(&mut self) -> &mut Rules<T> { &mut self.rules }
 
-	pub fn get(&self, c : (u32,u32)) -> Soup {
+	pub fn get(&self, c : (u32,u32)) -> Soup<T> {
 		self.cells.get(&c).unwrap().clone()
 	}
-	pub fn set(&mut self, c : (u32, u32), s : Soup) {
+	pub fn set(&mut self, c : (u32, u32), s : Soup<T>) {
 		self.cells.insert(c, s);
 	}
 	pub fn collapse(&mut self,
 		pos: (u32,u32),
-		states : Soup) -> Result<(), CollapseError>
+		states : Soup<T>) -> Result<(), CollapseError<T>>
 	{
 		if pos.0 >= self.w || pos.1 >= self.h {
 			return Err(CollapseError::Other(pos,
@@ -44,7 +48,7 @@ impl Grid {
 	}
 	pub fn collapse_certain(&mut self,
 		pos: (u32,u32),
-		state : char) -> Result<(), CollapseError>
+		state : T) -> Result<(), CollapseError<T>>
 	{
 		self.collapse(pos, Soup::new(vec![state]))
 	}
@@ -70,29 +74,16 @@ impl Grid {
 		}
 		out
 	}
-	fn get_uncertain_cells(&self) -> HashMap<(u32, u32), Soup> {
+	fn get_uncertain_cells(&self) -> HashMap<(u32, u32), Soup<T>> {
 		self.cells.iter()
 			.filter(|(_, v)| v.certain().is_none())
 			.map(|(k, v)| (k.clone(), v.clone()))
-			.collect::<HashMap<(u32,u32), Soup>>()
-	}
-	pub fn print(&self) {
-		println!("---");
-		for y in 0..self.h {
-			for x in 0..self.w {
-				let c = self.cells.get(&(x,y)).unwrap();
-				let c = c.certain()
-					.unwrap_or(c.states.len()
-						.to_string().chars().nth(0).unwrap());
-				print!("{} ", c);
-			}
-			println!();
-		}
+			.collect::<HashMap<(u32,u32), Soup<T>>>()
 	}
 
 	fn propagate_collapse(&mut self,
 		o: (u32,u32),
-		hist : &mut CollapseHistory) -> Result<(), CollapseError>
+		hist : &mut CollapseHistory<T>) -> Result<(), CollapseError<T>>
 	{
 		let nbrs_and_offsets = self.get_neighbours_with_offsets(o.0, o.1);
 
@@ -136,7 +127,7 @@ impl Grid {
 	}
 
 	pub fn bruteforce_collapse(&mut self,
-		order : &dyn Fn(&Soup) -> Vec<char>) -> Option<CollapseHistory>
+		order : &dyn Fn(&Soup<T>) -> Vec<T>) -> Option<CollapseHistory<T>>
 	{
 		let mut hist = CollapseHistory::new();
 		if self.bruteforce_iter(&mut hist, order) {
@@ -148,14 +139,14 @@ impl Grid {
 		}
 	}
 	fn bruteforce_iter(&mut self,
-		hist : &mut CollapseHistory,
-		order : &dyn Fn(&Soup) -> Vec<char>) -> bool
+		hist : &mut CollapseHistory<T>,
+		order : &dyn Fn(&Soup<T>) -> Vec<T>) -> bool
 	{
 		let uncertain_cells = self.get_uncertain_cells();
 		if uncertain_cells.len() == 0 { return true; }
 
 		let left = uncertain_cells.clone();
-		let mut left : Vec<(&(u32, u32), &Soup)> = left.iter().collect();
+		let mut left : Vec<(&(u32, u32), &Soup<T>)> = left.iter().collect();
 		// TODO make this optional, as determinism is not always necessary
 		left.sort();
 

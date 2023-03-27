@@ -1,18 +1,24 @@
 use crate::*;
 
 #[allow(dead_code)]
-fn example_rules() -> Rules {
+fn example_rules() -> Rules<char> {
 	let sample = vec![
 				" #     ",
 				"###  # ",
 				"#o## # ",
-				"###    "];
+				"###    "]
+					.iter()
+					.map(|l|
+						l.chars().collect::<Vec<char>>().clone())
+					.collect();
 	Rules::induce(vec![' ','#','o'], sample)
 }
 
 #[test]
 fn basic_induction() {
-	let sample = vec![ " #     ", "###  # ", "#o## # ", "###    "];
+	let sample = vec![ " #     ", "###  # ", "#o## # ", "###    "]
+		.iter().map(|l| l.chars().collect::<Vec<char>>().clone()).collect();
+
 	let rules = Rules::induce(vec![' ','#','o'], sample);
 	rules.disallow.iter().for_each(|(k, v)|
 		match k.0 {
@@ -31,7 +37,7 @@ fn deterministic() {
 	g1.collapse_certain((2,2), '#').expect("initial g1 collapse");
 	g2.collapse_certain((2,2), '#').expect("initial g2 collapse");
 
-	let deterministic_order = |c : &Soup| {
+	let deterministic_order = |c : &Soup<char>| {
 		c.states.clone()
 			.iter()
 			.map(|x| x.clone())
