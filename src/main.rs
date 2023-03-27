@@ -17,13 +17,14 @@ fn main() {
 		" r-+--++-",
 		" | |  ||r",
 		" | |  ||L",
-		" L-+--++-"
+		" L-+--++-",
+		"   |  || "
 	];
 	let states = vec![' ', '-', '|', '+', 'r', 'L'];
 	let rules = Rules::induce(states.clone(), templates::char::strings_to_vecs(&sample));
 	println!("{:?}", rules.disallow);
 
-	let mut grid : Grid<char> = Grid::new(5,5, rules);
+	let mut grid : Grid<char> = Grid::new(10,10, rules);
 	grid.print();
 	grid.collapse_certain((2, 3), states[2]).expect("First collapse");
 	grid.print();
