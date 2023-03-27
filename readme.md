@@ -27,7 +27,7 @@ Depending on your hardware, if you notice it getting stuck for more than a few s
 you may want to terminate the process and try again(or pick a different seed, if you're
 using a deterministic `order` function).
 
-[^1] &leq; 6% of the time, by my extremely loose estimate
+[^1]: &leq; 6% of the time, by my extremely loose estimate
 
 ### Legal
 I don't claim to be in any way responsible for the original concept or implementation of WFC.
