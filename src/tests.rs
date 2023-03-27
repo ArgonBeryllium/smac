@@ -1,4 +1,5 @@
 use crate::*;
+use templates::char::*;
 
 #[allow(dead_code)]
 fn example_rules() -> Rules<char> {
@@ -6,20 +7,14 @@ fn example_rules() -> Rules<char> {
 				" #     ",
 				"###  # ",
 				"#o## # ",
-				"###    "]
-					.iter()
-					.map(|l|
-						l.chars().collect::<Vec<char>>().clone())
-					.collect();
-	Rules::induce(vec![' ','#','o'], sample)
+				"###    "];
+	Rules::induce(vec![' ','#','o'], strings_to_vecs(&sample))
 }
 
 #[test]
 fn basic_induction() {
-	let sample = vec![ " #     ", "###  # ", "#o## # ", "###    "]
-		.iter().map(|l| l.chars().collect::<Vec<char>>().clone()).collect();
-
-	let rules = Rules::induce(vec![' ','#','o'], sample);
+	let sample = vec![ " #     ", "###  # ", "#o## # ", "###    "];
+	let rules = Rules::induce(vec![' ','#','o'], strings_to_vecs(&sample));
 	rules.disallow.iter().for_each(|(k, v)|
 		match k.0 {
 			'o' => { assert!(v.contains(&' ')); assert!(v.contains(&'o')); }

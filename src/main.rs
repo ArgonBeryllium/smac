@@ -5,36 +5,11 @@ mod soup;
 mod rules;
 mod collapse_helpers;
 mod grid;
-use soup::{Soup, SoupType};
+mod templates;
+use soup::Soup;
 use rules::Rules;
 use grid::Grid;
-
-impl SoupType for char {
-}
-
-fn strings_to_vecs(strings : &Vec<&str>) -> Vec<Vec<char>> {
-	strings.iter()
-		.map(|l|
-			l.chars().collect::<Vec<char>>().clone())
-		.collect()
-}
-trait Printable { fn print(&self) {} }
-impl Printable for Grid<char> {
-	fn print(&self) {
-		for y in 0..self.get_height() {
-			for x in 0..self.get_width() {
-				let c = self.get((x, y));
-				let n = c.states.len();
-				if n != 1 { print!("{n} ") }
-				else if let c = c.certain() {
-					if c.is_some() { print!("{} ", c.unwrap()) }
-					else { print!("? ") }
-				}
-			}
-			println!();
-		}
-	}
-}
+use templates::char::*;
 
 fn main() {
 	let sample = vec![
@@ -45,7 +20,7 @@ fn main() {
 		" L-+--++-"
 	];
 	let states = vec![' ', '-', '|', '+', 'r', 'L'];
-	let rules = Rules::induce(states.clone(), strings_to_vecs(&sample));
+	let rules = Rules::induce(states.clone(), templates::char::strings_to_vecs(&sample));
 	println!("{:?}", rules.disallow);
 
 	let mut grid : Grid<char> = Grid::new(5,5, rules);
