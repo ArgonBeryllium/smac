@@ -18,7 +18,8 @@ pub mod char {
 					let c = self.get((x, y));
 					let n = c.states.len();
 					if n != 1 { print!("{n} ") }
-					else if let c = c.certain() {
+					else {
+						let c = c.certain();
 						if c.is_some() { print!("{} ", c.unwrap()) }
 						else { print!("? ") }
 					}
