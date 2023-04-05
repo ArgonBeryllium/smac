@@ -175,7 +175,8 @@ impl<T: SoupType> Grid<T> {
 					match r.err().unwrap() {
 						CollapseError::Impossible(_, mut subhist) =>
 							subhist.undo(self, 0),
-						_ => todo!()
+						CollapseError::Other(pos, msg) =>
+							panic!("Collapse error in bruteforce_iter at position {:?}: {msg})", pos)
 					};
 				}
 			}
