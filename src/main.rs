@@ -20,7 +20,7 @@ fn main() {
 		" L-+--++-",
 		"   |  || "
 	];
-	let states = vec![' ', '-', '|', '+', 'r', 'L'];
+	let states = templates::char::get_unique_chars(&sample);
 	let rules = Rules::induce(states.clone(), templates::char::strings_to_vecs(&sample));
 
 	let mut grid : Grid<char> = Grid::new(10,10, rules);

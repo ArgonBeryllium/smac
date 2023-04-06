@@ -7,6 +7,15 @@ pub mod char {
 				l.chars().collect::<Vec<char>>().clone())
 			.collect()
 	}
+	pub fn get_unique_chars(strings : &Vec<&str>) -> Vec<char> {
+		let mut out = Vec::new();
+		for l in strings.iter() {
+			for c in l.chars() {
+				if !out.contains(&c) { out.push(c); }
+			}
+		}
+		out
+	}
 
 	impl SoupType for char {}
 	pub trait Printable { fn print(&self) {} }
