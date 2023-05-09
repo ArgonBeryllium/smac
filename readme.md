@@ -15,8 +15,8 @@ Thus, the table below may be of use if you're planning on examining the code:
 | name | used in | meaning |
 | ---- | ------- | ------- |
 | Soup | struct name | A **sup**erposition of states; Effectively an object storing the possible states of a cell. |
-| certain | `Soup::certain()`, `Grid::collapse_certain()`, etc. | The certain state of a Soup; Only defined if there is exactly 1 possible state the Soup could be in; `None` otherwise.
-| induce | `Rules::induce()` | `Induce` as in `induction`; The process of inferring rules based on the available information.
+| certain | `Soup::certain()`, `Grid::collapse_certain()`, etc. | The certain state of a Soup; Only defined if there is exactly 1 possible state the Soup could be in; `None` otherwise. |
+| induce | `Rules::induce()` | `Induce` as in `induction`; The process of inferring rules based on the available information. |
 
 ## Clarifications
 ### Demo
@@ -41,8 +41,8 @@ legal trouble is only one of the *many* factors you should *really* reconsider.
 I am quite aware that the current implementation isn't nearly as clean or performant as it could be,
 nor is it abstracted to the extent I'd like. I don't make my to-do lists public, partly because
 it'd expose the extent of my attention issues to the anonymous conglomerate, and partly because
-the they're worded is likely incomprehensible to anyone but me anyway.  
-Suffice to say, I *do* have a list for this project, and it is (and will likely remain) far from complete.
+the way they're worded is likely incomprehensible to anyone but me anyway.  
+Suffice to say, I *do* have a list for this project, and it is (and will likely remain) **far from complete**.
 
 ### Initialism
 It stands for **S**oup **MA**p **C**ollapse.
