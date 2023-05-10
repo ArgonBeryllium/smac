@@ -1,15 +1,5 @@
 use rand::seq::SliceRandom;
-
-mod tests;
-mod soup;
-mod rules;
-mod collapse_helpers;
-mod grid;
-mod templates;
-use soup::Soup;
-use rules::Rules;
-use grid::Grid;
-use templates::char::*;
+use smac::prelude::*;
 
 fn main() {
 	let sample = vec![

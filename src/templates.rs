@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 pub mod char {
 	use crate::soup::SoupType;
 	use crate::grid::Grid;

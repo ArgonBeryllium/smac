@@ -1,7 +1,7 @@
 use core::fmt::Debug;
 use std::collections::HashMap;
 
-use crate::Grid;
+use crate::grid::Grid;
 use crate::soup::*;
 
 #[derive(Debug)]
