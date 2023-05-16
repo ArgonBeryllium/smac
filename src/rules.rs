@@ -18,8 +18,8 @@ impl<T: SoupType> Rules<T> {
 
 		let get_value = |x : usize, y : usize| -> &T {
 			example
-			.get(y).expect(format!("Example defined for row {y}").as_str())
-			.get(x).expect(format!("Example defined for {x}, {y}").as_str())
+			.get(y).expect(format!("Example definition for row {y}").as_str())
+			.get(x).expect(format!("Example definition for {x}, {y}").as_str())
 		};
 		
 		// yeah, I hate the nesting too
