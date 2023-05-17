@@ -16,7 +16,13 @@ Thus, the table below may be of use if you're planning on examining the code:
 | ---- | ------- | ------- |
 | Soup | struct name | A **sup**erposition of states; Effectively an object storing the possible states of a cell. |
 | certain | `Soup::certain()`, `Grid::collapse_certain()`, etc. | The certain state of a Soup; Only defined if there is exactly 1 possible state the Soup could be in; `None` otherwise. |
-| induce | `Rules::induce()` | `Induce` as in `induction`; The process of inferring rules based on the available information. Currently limited to noticing patterns between a Grid cell and its 8 neighbours. |
+| induce | `Rules::induce()` | `Induce` as in `induction`; The process of inferring rules based on the available information. Currently limited to noticing patterns between a 2D Grid cell and its 8 neighbours. |
+
+## Example
+To compile & run [the example](./examples/chars.rs), simply run
+`cargo run --example chars` in the project directory
+(make sure you have [cargo](https://doc.rust-lang.org/cargo/) installed.)
+.
 
 ## Clarifications
 ### Demo
